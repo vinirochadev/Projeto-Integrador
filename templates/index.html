@@ -1,0 +1,147 @@
+{% extends "layout.html" %}
+
+{% block conteudo %}
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <h3>Resumo Financeiro</h3>
+    <div class="resumo-container">
+        <div class="resumo-card receita">
+            <h4>Receitas</h4>
+            <p class="valor">R$ {{ '{:,.2f}'.format(totais['receita']).replace(',', 'X').replace('.', ',').replace('X', '.') }}</p>
+        </div>
+    
+        <div class="resumo-card despesa">
+            <h4>Despesas</h4>
+            <p class="valor">R$ {{ '{:,.2f}'.format(totais['despesa']).replace(',', 'X').replace('.', ',').replace('X', '.') }}</p>
+        </div>
+    
+        <div class="resumo-card saldo-base {% if saldo < 0 %}saldo-negativo{% elif saldo > 0 %}saldo-positivo{% endif %}">
+            <h4>Saldo</h4>
+            <p class="valor">R$ {{ '{:,.2f}'.format(saldo).replace(',', 'X').replace('.', ',').replace('X', '.') }}</p>
+        </div>
+    </div>
+
+    <div class="botoes-lado-a-lado">
+        <form action="/adicionar" method="post">
+            <label>Valor:</label><br>
+            <input type="text" name="valor" id="valor" placeholder="R$ 0,00" required inputmode="decimal" pattern="[0-9.,]+" class="form-campo"><br>
+
+            <label for="descricao">Descrição:</label>
+            <textarea id="descricao" name="descricao" rows="3" required class="form-campo"></textarea><br>
+
+            <label>Data:</label><br>
+            <input type="text" name="data" id="data" class="date-input form-campo" placeholder="DD/MM/AAAA" required><br>
+
+            <label>Tipo:</label><br>
+            <div class="grupo-acoes form-campo">
+                <div class="toggle-buttons">
+                    <input type="radio" id="receita" name="tipo" value="receita" checked>
+                    <label for="receita" class="toggle-button">Receita</label>
+                    <input type="radio" id="despesa" name="tipo" value="despesa">
+                    <label for="despesa" class="toggle-button">Despesa</label>
+                </div>
+                <button type="submit" class="toggle-button">Adicionar</button>
+            </div>
+        </form>
+    </div>
+
+    <h2>Transações</h2>
+    <div class="transacoes-lista">
+    {% for t in transacoes %}
+        <div class="transacao-item {% if t.tipo == 'receita' %}receita{% else %}despesa{% endif %}">
+            <form action="/excluir/{{ t.id }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir esta transação?');">
+                <button type="submit" title="Excluir">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </form>
+            <div class="transacao-icone">
+                {% if t.tipo == 'receita' %}
+                    <i class="fas fa-arrow-up"></i>
+                {% else %}
+                    <i class="fas fa-arrow-down"></i>
+                {% endif %}
+            </div>
+            <div class="transacao-main">
+                <div class="transacao-descricao">{{ t.descricao }}</div>
+                <div class="transacao-data">{{ t.data }}</div>
+            </div>
+            <div class="transacao-valor {% if t.tipo == 'receita' %}valor-receita{% else %}valor-despesa{% endif %}">
+                R$ {{ '{:,.2f}'.format(t.valor).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+            </div>
+        </div>
+    {% else %}
+        <div class="sem-transacoes">
+            <i class="fas fa-info-circle"></i>
+            <p>Nenhuma transação registrada.</p>
+        </div>
+    {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar Flatpickr para todos os campos de data
+    flatpickr(".date-input", {
+        dateFormat: "d/m/Y",
+        locale: "pt"
+    });
+
+    // Gerenciar botões de tipo
+    const toggleButtons = document.querySelectorAll('.toggle-button');
+    const tipoInput = document.getElementById('tipo');
+
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover classe active de todos os botões
+            toggleButtons.forEach(btn => btn.classList.remove('active'));
+            // Adicionar classe active ao botão clicado
+            this.classList.add('active');
+            // Atualizar o valor do input hidden
+            tipoInput.value = this.dataset.value;
+        });
+    });
+
+    // Máscara de valor em tempo real para o campo Valor
+    const valorInput = document.getElementById('valor');
+    if (valorInput) {
+        valorInput.addEventListener('input', function(e) {
+            let v = this.value.replace(/\D/g, ''); // Remove tudo que não for dígito
+            if (v.length > 0) {
+                v = (parseInt(v) / 100).toFixed(2);
+                v = v.replace('.', ',');
+                v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+                this.value = v;
+            }
+        });
+        // Para evitar bug ao colar valor
+        valorInput.addEventListener('blur', function(e) {
+            if (this.value === '') return;
+            let v = this.value.replace(/\D/g, '');
+            if (v.length > 0) {
+                v = (parseInt(v) / 100).toFixed(2);
+                v = v.replace('.', ',');
+                v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+                this.value = v;
+            }
+        });
+    }
+
+    document.querySelector('form[action="/adicionar"]').addEventListener('submit', function(e) {
+        const valor = document.getElementById('valor').value.replace(/\D/g, '');
+        if (!valor || parseInt(valor) === 0) {
+            alert('Por favor, informe um valor maior que zero.');
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}
