@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, flash
 from datetime import datetime
 from services.transacoes_service import listar_transacoes, adicionar_transacao, calcular_totais, excluir_transacao
 from models.transacao import Transacao
+import os
 
 # Inicializa a aplicação Flask
 app = Flask(__name__)
