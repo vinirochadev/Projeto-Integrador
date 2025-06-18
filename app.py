@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, flash
 from datetime import datetime
 from services.transacoes_service import listar_transacoes, adicionar_transacao, calcular_totais, excluir_transacao
 from models.transacao import Transacao
+import os
 
 # Inicializa a aplicação Flask
 app = Flask(__name__)
@@ -69,4 +70,5 @@ def excluir(id):
 
 # Executa a aplicação em modo debug se for o arquivo principal
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
